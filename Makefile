@@ -9,7 +9,7 @@ TEMP_IMAGE := $(IMAGE_NAME):$(TEMP_IMAGE_TAG)
 
 .PHONY: build-temp-image
 build-temp-image:
-	docker build --no-cache --tag $(TEMP_IMAGE) $(PWD)
+	docker build --no-cache --tag $(TEMP_IMAGE) $(CWD)
 
 .PHONY: build
 build: build-temp-image
@@ -17,6 +17,6 @@ build: build-temp-image
 	$(eval VERSION := $(shell echo "$(VERSION_INFO)" | sed 's/.*Version: \([^ ]*\).*/\1/'))
 	echo $(VERSION) > VERSION
 	docker image rm $(TEMP_IMAGE)
-	docker build --tag $(IMAGE_NAME):$(VERSION) $(PWD)
+	docker build --tag $(IMAGE_NAME):$(VERSION) --tag $(IMAGE_NAME):latest $(CWD)
 
 .DEFAULT_GOAL := build
