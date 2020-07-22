@@ -35,4 +35,12 @@ build: build-image
 		docker push $(IMAGE_NAME):latest; \
 	fi
 
+.PHONY: help
+help:
+	docker run --rm $(IMAGE_NAME) --help
+
+.PHONY: version
+version:
+	docker run --rm $(IMAGE_NAME) --version
+
 .DEFAULT_GOAL := build-image
