@@ -20,4 +20,9 @@ _closure-compiler help_
 
 _compile some javascript_
 
-        docker run --rm -u $(shell id -u):$(shell id -g)-v /path/to/js:/js -w /js sndsgd/closure-compiler --js=file.js
+        docker run --rm \
+          -u $(shell id -u):$(shell id -g) \
+          -v v $(CWD):$(CWD) \
+          -w $(CWD) \
+          sndsgd/closure-compiler \
+          --js=file.js

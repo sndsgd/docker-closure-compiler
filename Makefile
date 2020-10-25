@@ -1,46 +1,65 @@
 CWD := $(shell pwd)
-IMAGE_NAME ?= sndsgd/closure-compiler
 
-# we don't know the version until we create an image and run `--version`
-# so we'll create a temp image to check the version, and then use the
-# result to tag the resulting image
-TEMP_IMAGE_TAG := $(shell date +"%y-%m-%d-%H-%M-%S")
-TEMP_IMAGE := $(IMAGE_NAME):$(TEMP_IMAGE_TAG)
+VERSION ?=
+VERSION_URL ?= https://repo1.maven.org/maven2/com/google/javascript/closure-compiler/
+VERSION_PATTERN ?= '(?<=>)[^/]+(?=/)'
 
-.PHONY: build-temp-image
-build-temp-image:
-	docker build --no-cache --tag $(TEMP_IMAGE) $(CWD)
+ifndef (VERSION)
+	VERSION = $(shell curl -s $(VERSION_URL) | grep '<a href="v' | sort | tail -n 1 | grep -Po $(VERSION_PATTERN))
+endif
 
-.PHONY: build-image
-build-image: build-temp-image
-	$(eval VERSION_INFO := $(shell docker run --rm $(TEMP_IMAGE) --version))
-	$(eval VERSION := $(shell echo "$(VERSION_INFO)" | sed 's/.*Version: \([^ ]*\).*/\1/'))
-	echo "$(VERSION)" > VERSION
-	docker build --tag $(IMAGE_NAME):$(VERSION) --tag $(IMAGE_NAME):latest $(CWD)
-	echo "removing temp image"
-	docker image rm $(TEMP_IMAGE)
-
-.PHONY: build
-build: build-image
-	@VERSION_STATUS=$$(git status VERSION --porcelain)
-	@if [ "$$VERSION_STATUS" = "" ]; then \
-		echo "existing version is up to date"; \
-	else \
-		VERSION=$$(cat VERSION | tr -d '[:space:]'); \
-		echo "pushing version $$VERSION..."; \
-		git add VERSION; \
-		git commit -m "bump version to $$VERSION"; \
-		git push; \
-		docker push $(IMAGE_NAME):$$VERSION; \
-		docker push $(IMAGE_NAME):latest; \
-	fi
+JARFILE_URL = $(VERSION_URL)$(VERSION)/closure-compiler-$(VERSION).jar
 
 .PHONY: help
 help:
-	docker run --rm $(IMAGE_NAME) --help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[33m%s\033[0m~%s\n", $$1, $$2}' \
+	| column -s "~" -t
 
-.PHONY: version
-version:
-	docker run --rm $(IMAGE_NAME) --version
+IMAGE_NAME ?= sndsgd/closure-compiler
+IMAGE := $(IMAGE_NAME):$(VERSION)
+IMAGE_ARGS ?= --quiet
+.PHONY: image
+image: ## Build the docker image
+	@echo "building image..."
+	@docker build \
+	  $(IMAGE_ARGS) \
+		--build-arg JARFILE_URL=$(JARFILE_URL) \
+		--tag $(IMAGE_NAME):latest \
+		--tag $(IMAGE) \
+		$(CWD)
 
-.DEFAULT_GOAL := build-image
+.PHONY: push
+push: ## Push the docker image
+push: test
+	@docker push $(IMAGE)
+	@docker push $(IMAGE_NAME):latest
+
+.PHONY: run-help
+run-help: ## Run `closure-compiler --help`
+run-help:
+	@docker run --rm $(IMAGE_NAME) --help
+
+.PHONY: run-version
+run-version: ## Run `closure-compiler --version`
+run-version:
+	@docker run --rm $(IMAGE_NAME) --version
+
+.PHONY: test
+test: ## Test the image
+test: image
+	@docker run \
+		--rm \
+		-v $(CWD):$(CWD) \
+		-w $(CWD) \
+		$(IMAGE_NAME) \
+		--warning_level=VERBOSE \
+		--summary_detail_level=10 \
+		--language_out=ECMASCRIPT6_STRICT \
+		--compilation_level=ADVANCED \
+		--isolation_mode=IIFE \
+		--use_types_for_optimization=true \
+		--formatting=PRETTY_PRINT \
+		--js="tests/*.js"
+
+.DEFAULT_GOAL := help
