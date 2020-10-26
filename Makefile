@@ -27,22 +27,6 @@ image: ## Build the docker image
 		--tag $(IMAGE) \
 		$(CWD)
 
-.PHONY: push
-push: ## Push the docker image
-push: test
-	@docker push $(IMAGE)
-	@docker push $(IMAGE_NAME):latest
-
-.PHONY: run-help
-run-help: ## Run `closure-compiler --help`
-run-help: image
-	@docker run --rm $(IMAGE_NAME) --help
-
-.PHONY: run-version
-run-version: ## Run `closure-compiler --version`
-run-version: image
-	@docker run --rm $(IMAGE_NAME) --version
-
 .PHONY: test
 test: ## Test the image
 test: image
@@ -59,5 +43,27 @@ test: image
 		--use_types_for_optimization=true \
 		--formatting=PRETTY_PRINT \
 		--js="tests/*.js"
+
+.PHONY: push
+push: ## Push the docker image
+push: test
+	@docker push $(IMAGE)
+	@docker push $(IMAGE_NAME):latest
+
+IMAGE_CHECK_URL = https://index.docker.io/v1/repositories/$(IMAGE_NAME)/tags/$(VERSION)
+.PHONY: push-cron
+push-cron: ## Push an image if the version does not exist
+	curl --silent -f -lSL $(IMAGE_CHECK_URL) > /dev/null \
+	  || make --no-print-directory push IMAGE_ARGS=--no-cache
+
+.PHONY: run-help
+run-help: ## Run `closure-compiler --help`
+run-help: image
+	@docker run --rm $(IMAGE_NAME) --help
+
+.PHONY: run-version
+run-version: ## Run `closure-compiler --version`
+run-version: image
+	@docker run --rm $(IMAGE_NAME) --version
 
 .DEFAULT_GOAL := help
