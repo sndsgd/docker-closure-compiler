@@ -1,13 +1,11 @@
 CWD := $(shell pwd)
 
-VERSION ?=
 VERSION_URL ?= https://repo1.maven.org/maven2/com/google/javascript/closure-compiler/
 VERSION_PATTERN ?= '(?<=>)[^/]+(?=/)'
-
+VERSION ?=
 ifndef (VERSION)
 	VERSION = $(shell curl -s $(VERSION_URL) | grep '<a href="v' | sort | tail -n 1 | grep -Po $(VERSION_PATTERN))
 endif
-
 JARFILE_URL = $(VERSION_URL)$(VERSION)/closure-compiler-$(VERSION).jar
 
 .PHONY: help
@@ -37,12 +35,12 @@ push: test
 
 .PHONY: run-help
 run-help: ## Run `closure-compiler --help`
-run-help:
+run-help: image
 	@docker run --rm $(IMAGE_NAME) --help
 
 .PHONY: run-version
 run-version: ## Run `closure-compiler --version`
-run-version:
+run-version: image
 	@docker run --rm $(IMAGE_NAME) --version
 
 .PHONY: test
