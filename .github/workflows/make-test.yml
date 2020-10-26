@@ -2,10 +2,7 @@ name: make-test
 
 on:
   push:
-    branches:
-    - "*"
-  schedule:
-  - cron: '42 * * * *'
+    branches: ["*"]
 
 jobs:
   build:
