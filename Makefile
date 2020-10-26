@@ -1,13 +1,11 @@
 CWD := $(shell pwd)
 
-VERSION ?=
 VERSION_URL ?= https://repo1.maven.org/maven2/com/google/javascript/closure-compiler/
 VERSION_PATTERN ?= '(?<=>)[^/]+(?=/)'
-
+VERSION ?=
 ifndef (VERSION)
 	VERSION = $(shell curl -s $(VERSION_URL) | grep '<a href="v' | sort | tail -n 1 | grep -Po $(VERSION_PATTERN))
 endif
-
 JARFILE_URL = $(VERSION_URL)$(VERSION)/closure-compiler-$(VERSION).jar
 
 .PHONY: help
@@ -29,22 +27,6 @@ image: ## Build the docker image
 		--tag $(IMAGE) \
 		$(CWD)
 
-.PHONY: push
-push: ## Push the docker image
-push: test
-	@docker push $(IMAGE)
-	@docker push $(IMAGE_NAME):latest
-
-.PHONY: run-help
-run-help: ## Run `closure-compiler --help`
-run-help:
-	@docker run --rm $(IMAGE_NAME) --help
-
-.PHONY: run-version
-run-version: ## Run `closure-compiler --version`
-run-version:
-	@docker run --rm $(IMAGE_NAME) --version
-
 .PHONY: test
 test: ## Test the image
 test: image
@@ -61,5 +43,27 @@ test: image
 		--use_types_for_optimization=true \
 		--formatting=PRETTY_PRINT \
 		--js="tests/*.js"
+
+.PHONY: push
+push: ## Push the docker image
+push: test
+	@docker push $(IMAGE)
+	@docker push $(IMAGE_NAME):latest
+
+IMAGE_CHECK_URL = https://index.docker.io/v1/repositories/$(IMAGE_NAME)/tags/$(VERSION)
+.PHONY: push-cron
+push-cron: ## Build and push an image if the version does not exist
+	curl --silent -f -lSL $(IMAGE_CHECK_URL) > /dev/null \
+	  || make --no-print-directory push IMAGE_ARGS=--no-cache
+
+.PHONY: run-help
+run-help: ## Run `closure-compiler --help`
+run-help: image
+	@docker run --rm $(IMAGE_NAME) --help
+
+.PHONY: run-version
+run-version: ## Run `closure-compiler --version`
+run-version: image
+	@docker run --rm $(IMAGE_NAME) --version
 
 .DEFAULT_GOAL := help
