@@ -11,5 +11,7 @@ jobs:
     - uses: actions/checkout@master
       with:
         fetch-depth: 1
+    - name: Run `make help`
+      run: make help
     - name: Run `make test`
       run: make test IMAGE_ARGS=
