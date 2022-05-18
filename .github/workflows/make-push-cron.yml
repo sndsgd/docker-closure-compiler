@@ -2,7 +2,7 @@ name: make-push-cron
 
 on:
   schedule:
-  - cron: '42 * * * *'
+  - cron: '42 5 * * *'
 
 jobs:
   main:
