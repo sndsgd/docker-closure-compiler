@@ -1,7 +1,12 @@
 CWD := $(shell pwd)
 
-IMAGE_NAME ?= sndsgd/closure-compiler
+NAME := sndsgd/closure-compiler
+IMAGE_NAME ?= ghcr.io/$(NAME)
+
+# `ensure-version` is used to fetch the latest version if
+# no version is present on run
 VERSION ?=
+IMAGE := $(IMAGE_NAME):$(VERSION)
 
 .PHONY: help
 help:
@@ -20,7 +25,6 @@ endif
 	@$(eval JARFILE_URL := $(VERSION_URL)$(VERSION)/closure-compiler-$(VERSION).jar)
 	@$(eval IMAGE := $(IMAGE_NAME):$(VERSION))
 
-IMAGE := $(IMAGE_NAME):$(VERSION)
 IMAGE_ARGS ?= --quiet
 .PHONY: image
 image: ## Build the docker image
@@ -29,7 +33,6 @@ image: ensure-version
 	@docker build \
 	  $(IMAGE_ARGS) \
 		--build-arg JARFILE_URL=$(JARFILE_URL) \
-		--tag $(IMAGE_NAME):latest \
 		--tag $(IMAGE) \
 		$(CWD)
 
@@ -55,14 +58,19 @@ test: image
 push: ## Push the docker image
 push: test
 	@docker push $(IMAGE)
-	@docker push $(IMAGE_NAME):latest
 
-IMAGE_CHECK_URL = https://hub.docker.com/v2/repositories/$(IMAGE_NAME)/tags/$(VERSION)
 .PHONY: push-cron
 push-cron: ## Build and push an image if the version does not exist
 push-cron: ensure-version
-	curl --silent -f -lSL $(IMAGE_CHECK_URL) > /dev/null \
-	  || make --no-print-directory push IMAGE_ARGS=--no-cache
+	@token_response="$$(curl --silent -f -lSL "https://ghcr.io/token?scope=repository:$(NAME):pull")"; \
+	token="$$(echo "$$token_response" | jq -r .token)"; \
+	json="$$(curl --silent -f -lSL -H "Authorization: Bearer $$token" https://ghcr.io/v2/$(NAME)/tags/list)"; \
+	index="$$(echo "$$json" | jq '.tags | index("$(VERSION)")')"; \
+	if [ "$$index" = "null" ]; then \
+		make --no-print-directory push IMAGE_ARGS=--no-cache; \
+	else \
+		echo "image for '$(VERSION)' already exists"; \
+	fi
 
 .PHONY: run-help
 run-help: ## Run `closure-compiler --help`

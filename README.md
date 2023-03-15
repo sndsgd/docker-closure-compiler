@@ -8,21 +8,22 @@ A [Closure Compiler](https://github.com/google/closure-compiler) docker image bu
 If you want to build the image locally, you can follow these steps:
 
 1. Checkout this repo
-1. Run `make build-image`
+1. Run `make image`
 
 
 ### Usage
 
 _closure-compiler help_
-
-        docker run --rm sndsgd/closure-compiler --help
-
+```
+docker run --rm ghcr.io/sndsgd/closure-compiler:v20230228 --help
+```
 
 _compile some javascript_
-
-        docker run --rm \
-          -u $(shell id -u):$(shell id -g) \
-          -v v $(CWD):$(CWD) \
-          -w $(CWD) \
-          sndsgd/closure-compiler \
-          --js=file.js
+```
+docker run --rm \
+  -u $(id -u):$(id -g) \
+  -v $(pwd):$(pwd) \
+  -w $(pwd) \
+  ghcr.io/sndsgd/closure-compiler:v20230228 \
+  --js=file.js
+```
