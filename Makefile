@@ -1,12 +1,14 @@
 CWD := $(shell pwd)
 
+# if no version is provided, `VERSION` is set in the `ensure-version` target
+# the image will also be tagged `:latest` when the current version is built
+VERSION ?=
+FETCHED_VERSION ?=
+
 NAME := sndsgd/closure-compiler
 IMAGE_NAME ?= ghcr.io/$(NAME)
-
-# `ensure-version` is used to fetch the latest version if
-# no version is present on run
-VERSION ?=
 IMAGE := $(IMAGE_NAME):$(VERSION)
+LATEST_IMAGE := $(IMAGE_NAME):latest
 
 .PHONY: help
 help:
@@ -21,6 +23,7 @@ ensure-version:
 ifeq ($(VERSION),)
 	$(info fetching latest version...)
 	@$(eval VERSION = $(shell curl -s $(VERSION_URL) | grep '<a href="v' | sort | tail -n 1 | grep -Po $(VERSION_PATTERN)))
+	@$(eval FETCHED_VERSION = $(VERSION))
 endif
 	@$(eval JARFILE_URL := $(VERSION_URL)$(VERSION)/closure-compiler-$(VERSION).jar)
 	@$(eval IMAGE := $(IMAGE_NAME):$(VERSION))
@@ -35,6 +38,9 @@ image: ensure-version
 		--build-arg JARFILE_URL=$(JARFILE_URL) \
 		--tag $(IMAGE) \
 		$(CWD)
+ifeq ($(POSTCSS_VERSION),$(FETCHED_VERSION))
+	@docker tag $(IMAGE) $(LATEST_IMAGE)
+endif
 
 .PHONY: test
 test: ## Test the image
@@ -58,6 +64,9 @@ test: image
 push: ## Push the docker image
 push: test
 	@docker push $(IMAGE)
+ifeq ($(POSTCSS_VERSION),$(FETCHED_VERSION))
+	@docker push $(LATEST_IMAGE)
+endif
 
 .PHONY: push-cron
 push-cron: ## Build and push an image if the version does not exist
