@@ -38,7 +38,7 @@ image: ensure-version
 		--build-arg JARFILE_URL=$(JARFILE_URL) \
 		--tag $(IMAGE) \
 		$(CWD)
-ifeq ($(POSTCSS_VERSION),$(FETCHED_VERSION))
+ifeq ($(VERSION),$(FETCHED_VERSION))
 	@docker tag $(IMAGE) $(LATEST_IMAGE)
 endif
 
@@ -64,7 +64,7 @@ test: image
 push: ## Push the docker image
 push: test
 	@docker push $(IMAGE)
-ifeq ($(POSTCSS_VERSION),$(FETCHED_VERSION))
+ifeq ($(VERSION),$(FETCHED_VERSION))
 	@docker push $(LATEST_IMAGE)
 endif
 
@@ -76,7 +76,7 @@ push-cron: ensure-version
 	json="$$(curl --silent -f -lSL -H "Authorization: Bearer $$token" https://ghcr.io/v2/$(NAME)/tags/list)"; \
 	index="$$(echo "$$json" | jq '.tags | index("$(VERSION)")')"; \
 	if [ "$$index" = "null" ]; then \
-		make --no-print-directory push IMAGE_ARGS=--no-cache; \
+		make --no-print-directory push IMAGE_ARGS=--no-cache VERSION=$(VERSION) FETCHED_VERSION=$(VERSION); \
 	else \
 		echo "image for '$(VERSION)' already exists"; \
 	fi
