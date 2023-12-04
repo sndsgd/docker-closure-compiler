@@ -25,7 +25,7 @@ jobs:
           now="$(date +%s)"
           seconds_since_last_commit=$((now-last_commit_ts))
           days_since_last_commit=$((seconds_since_last_commit/86400))
-          if [ $days_since_last_commit -gt 30 ]; then
+          if [ $days_since_last_commit -lt 30 ]; then
             lines="$(wc -l < "$file")"
             trimmed_content="$(sed -Ez '$ s/\n+$//' "$file")"
             trimmed_content_lines=$(wc -l <<< "$trimmed_content")
