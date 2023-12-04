@@ -2,7 +2,7 @@ name: make-push-cron
 
 on:
   schedule:
-  - cron: '42 * * * *'
+  - cron: '42 */6 * * *'
 
 jobs:
   main:
@@ -19,13 +19,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: update commit date to keep cron running
         run: |
-          set -x
           file=README.md
           last_commit_ts="$(git log -1 --format="%at" | xargs -I{} date -d @{} +%s)"
           now="$(date +%s)"
           seconds_since_last_commit=$((now-last_commit_ts))
           days_since_last_commit=$((seconds_since_last_commit/86400))
-          if [ $days_since_last_commit -lt 30 ]; then
+          if [ $days_since_last_commit -gt 50 ]; then
             lines="$(wc -l < "$file")"
             trimmed_content="$(sed -Ez '$ s/\n+$//' "$file")"
             trimmed_content_lines=$(wc -l <<< "$trimmed_content")
