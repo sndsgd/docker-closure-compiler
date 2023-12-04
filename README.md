@@ -27,3 +27,4 @@ docker run --rm \
   ghcr.io/sndsgd/closure-compiler:v20230228 \
   --js=file.js
 ```
+
