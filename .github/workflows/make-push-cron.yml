@@ -2,7 +2,7 @@ name: make-push-cron
 
 on:
   schedule:
-  - cron: '42 5 * * *'
+  - cron: '42 * * * *'
 
 jobs:
   main:
@@ -17,5 +17,29 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: update commit date to keep cron running
+        run: |
+          set -x
+          file=README.md
+          last_commit_ts="$(git log -1 --format="%at" | xargs -I{} date -d @{} +%s)"
+          now="$(date +%s)"
+          seconds_since_last_commit=$((now-last_commit_ts))
+          days_since_last_commit=$((seconds_since_last_commit/86400))
+          if [ $days_since_last_commit -gt 30 ]; then
+            lines="$(wc -l < "$file")"
+            trimmed_content="$(sed -Ez '$ s/\n+$//' "$file")"
+            trimmed_content_lines=$(wc -l <<< "$trimmed_content")
+            updated_content="$trimmed_content"
+            echo "$updated_content" > "$file"
+            if [ $((lines-trimmed_content_lines)) -eq 0 ]; then
+              echo "" >> "$file"
+            fi
+
+            git add "$file"
+            git config --global user.name 'sndsgd'
+            git config --global user.email 'sndsgd@users.noreply.github.com'
+            git commit -m "tweak whitespace to keep github action cron enabled"
+            git push
+          fi
       - name: Build and push
         run: make push-cron
