@@ -16,13 +16,12 @@ help:
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[33m%s\033[0m~%s\n", $$1, $$2}' \
 	| column -s "~" -t
 
-VERSION_URL ?= https://repo1.maven.org/maven2/com/google/javascript/closure-compiler/
-VERSION_PATTERN ?= '(?<=>)[^/]+(?=/)'
+VERSION_URL ?= https://github.com/google/closure-compiler/tags
 .PHONY: ensure-version
 ensure-version:
 ifeq ($(VERSION),)
 	$(info fetching latest version...)
-	@$(eval VERSION = $(shell curl -s $(VERSION_URL) | grep '<a href="v' | sort | tail -n 1 | grep -Po $(VERSION_PATTERN)))
+	$(eval VERSION = $(shell curl -s $(VERSION_URL) | grep -Po '<a href=".*?/releases/tag/\Kv[^"]+' | sort | tail -n 1 ))
 	@$(eval FETCHED_VERSION = $(VERSION))
 endif
 	@$(eval JARFILE_URL := $(VERSION_URL)$(VERSION)/closure-compiler-$(VERSION).jar)
