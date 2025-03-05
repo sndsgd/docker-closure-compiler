@@ -25,4 +25,3 @@ If you want to build the image locally, you can follow these steps:
 
 1. Checkout this repo
 1. Run `make image`
-
