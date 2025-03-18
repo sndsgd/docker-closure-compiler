@@ -16,16 +16,14 @@ help:
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[33m%s\033[0m~%s\n", $$1, $$2}' \
 	| column -s "~" -t
 
-VERSION_URL ?= https://repo1.maven.org/maven2/com/google/javascript/closure-compiler/
-VERSION_PATTERN ?= '(?<=>)[^/]+(?=/)'
+VERSION_URL ?= https://github.com/google/closure-compiler/tags
+VERSION_PATTERN ?= '/google/closure-compiler/releases/tag/v[0-9]+'
 .PHONY: ensure-version
 ensure-version:
 ifeq ($(VERSION),)
-	$(info fetching latest version...)
-	@$(eval VERSION = $(shell curl -s $(VERSION_URL) | grep '<a href="v' | sort | tail -n 1 | grep -Po $(VERSION_PATTERN)))
-	@$(eval FETCHED_VERSION = $(VERSION))
+	$(eval VERSION = $(shell curl -s $(VERSION_URL) | grep -Po $(VERSION_PATTERN) | head -n 1 | sed 's|.*/tag/||'))
+	$(eval FETCHED_VERSION = $(VERSION))
 endif
-	@$(eval JARFILE_URL := $(VERSION_URL)$(VERSION)/closure-compiler-$(VERSION).jar)
 	@$(eval IMAGE := $(IMAGE_NAME):$(VERSION))
 
 IMAGE_ARGS ?= --quiet
@@ -35,9 +33,15 @@ image: ensure-version
 	$(info building image for closure compiler $(VERSION)...)
 	@docker build \
 	  $(IMAGE_ARGS) \
-		--build-arg JARFILE_URL=$(JARFILE_URL) \
+		--build-arg VERSION=$(VERSION) \
 		--tag $(IMAGE) \
 		$(CWD)
+	@VERSION_OUTPUT=$$(docker run --rm $(IMAGE) --version | grep "Version: " | awk '{print $$2}' | tr -d '[:space:]'); \
+	if [ "$$VERSION_OUTPUT" != "$(VERSION)" ]; then \
+		echo "unexpected version: '$$VERSION_OUTPUT' (expected: $(VERSION))"; \
+		docker image rm $(IMAGE); \
+		exit 1; \
+	fi
 ifeq ($(VERSION),$(FETCHED_VERSION))
 	@docker tag $(IMAGE) $(LATEST_IMAGE)
 endif
