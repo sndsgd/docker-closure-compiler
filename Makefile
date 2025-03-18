@@ -23,7 +23,6 @@ ensure-version:
 ifeq ($(VERSION),)
 	$(eval VERSION = $(shell curl -s $(VERSION_URL) | grep -Po $(VERSION_PATTERN) | head -n 1 | sed 's|.*/tag/||'))
 	$(eval FETCHED_VERSION = $(VERSION))
-	$(info version=$(VERSION) fetchedVersion=$(FETCHED_VERSION))
 endif
 	@$(eval IMAGE := $(IMAGE_NAME):$(VERSION))
 
