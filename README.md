@@ -15,6 +15,10 @@ docker run --rm \
   -v "$(pwd)":"$(pwd)" \
   -w "$(pwd)" \
   ghcr.io/sndsgd/closure-compiler:latest \
+  --compilation_level=ADVANCED \
+  --language_out=ECMASCRIPT6_STRICT \
+  --summary_detail_level=10 \
+  --warning_level=VERBOSE \
   --js="$(pwd)/path/to/src/**.js" \
   --js="$(pwd)/path/to/entrypoint.js"
 ```
