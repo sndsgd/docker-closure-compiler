@@ -40,7 +40,7 @@ image: ensure-version
 	@VERSION_OUTPUT=$$(docker run --rm $(IMAGE) --version | grep "Version: " | awk '{print $$2}' | tr -d '[:space:]'); \
 	if [ "$$VERSION_OUTPUT" != "$(VERSION)" ]; then \
 		echo "unexpected version: '$$VERSION_OUTPUT' (expected: $(VERSION))"; \
-		docker image -rm $(IMAGE); \
+		docker image rm $(IMAGE); \
 		exit 1; \
 	fi
 ifeq ($(VERSION),$(FETCHED_VERSION))
