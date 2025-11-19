@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y \
   build-essential curl gcc git gnupg nodejs openjdk-21-jdk-headless python3 zip
 
 WORKDIR /opt
-RUN curl -fsSL https://github.com/bazelbuild/bazelisk/releases/download/v1.25.0/bazelisk-amd64.deb -o /tmp/bazelisk-amd64.deb \
+RUN curl -fsSL https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-amd64.deb -o /tmp/bazelisk-amd64.deb \
   && dpkg -i /tmp/bazelisk-amd64.deb
 
 ARG VERSION
